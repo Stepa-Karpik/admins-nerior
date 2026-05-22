@@ -1,7 +1,10 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import gsap from "gsap"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+import { useGSAP } from "@gsap/react"
 import {
   type LucideIcon,
   Bell,
@@ -32,6 +35,8 @@ import {
   redirectToAuth,
   request,
 } from "@/lib/api"
+
+gsap.registerPlugin(ScrollTrigger)
 
 type Section = "overview" | "users" | "feed" | "tickets" | "ticket" | "assistant" | "profile"
 type Lang = "ru" | "en"
@@ -119,6 +124,7 @@ export function AdminWorkspace({ section, ticketId }: { section: Section; ticket
   const settings = useSettings()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [authState, setAuthState] = useState<"loading" | "ready" | "denied">("loading")
+  const mainRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     ensureAdminProfile().then((item) => {
@@ -132,6 +138,44 @@ export function AdminWorkspace({ section, ticketId }: { section: Section; ticket
     })
   }, [])
 
+
+
+  useGSAP(() => {
+    if (authState !== "ready") return
+
+    gsap.fromTo(
+      ".lux-enter",
+      { y: 22, opacity: 0, filter: "blur(10px)" },
+      { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.95, stagger: 0.07, ease: "power3.out" },
+    )
+
+    gsap.utils.toArray<HTMLElement>(".lux-media").forEach((el) => {
+      gsap.fromTo(
+        el,
+        { scale: 0.94, opacity: 0.68 },
+        {
+          scale: 1,
+          opacity: 1,
+          ease: "none",
+          scrollTrigger: { trigger: el, start: "top 88%", end: "bottom 35%", scrub: true },
+        },
+      )
+    })
+
+    gsap.utils.toArray<HTMLElement>(".stack-card").forEach((el, index) => {
+      gsap.fromTo(
+        el,
+        { y: 42 + index * 7, opacity: 0.42 },
+        {
+          y: 0,
+          opacity: 1,
+          ease: "power2.out",
+          scrollTrigger: { trigger: el, start: "top 92%", end: "top 54%", scrub: true },
+        },
+      )
+    })
+  }, { scope: mainRef, dependencies: [authState, section], revertOnUpdate: true })
+
   if (authState !== "ready") {
     return <Gate text={authState === "loading" ? settings.t.loading : settings.t.denied} />
   }
@@ -139,7 +183,7 @@ export function AdminWorkspace({ section, ticketId }: { section: Section; ticket
   return (
     <div className="shell">
       <Sidebar section={section} profile={profile} settings={settings} />
-      <main className="main">
+      <main className="main" ref={mainRef}>
         <Topbar title={settings.t.nav[section]} subtitle={settings.t.subtitle} profile={profile} />
         {section === "overview" && <Overview settings={settings} />}
         {section === "users" && <UsersPanel settings={settings} />}
@@ -185,17 +229,73 @@ function Sidebar({ section, profile, settings }: { section: Section; profile: Pr
 }
 
 function Topbar({ title, subtitle, profile }: { title: string; subtitle: string; profile: Profile | null }) {
-  return <header className="topbar"><div><h1>{title}</h1><p>{subtitle}</p></div><div className="top-actions"><a className="pill" href="https://planner.nerior.ru/feed">Лента</a><a className="pill" href="https://documents.nerior.ru">Документы</a><span className="pill admin"><Shield size={16} />{profile?.username}</span></div></header>
+  return (
+    <header className="topbar lux-enter">
+      <div className="topbar-title">
+        <span className="kicker">Nerior / Admin</span>
+        <h1>{title}</h1>
+        <p>{subtitle}</p>
+      </div>
+      <div className="top-actions">
+        <a className="pill ghost" href="https://planner.nerior.ru/feed">Лента</a>
+        <a className="pill ghost" href="https://documents.nerior.ru">Документы</a>
+        <span className="pill admin"><Shield size={16} />{profile?.username}</span>
+      </div>
+    </header>
+  )
 }
 
 function Overview({ settings }: { settings: ReturnType<typeof useSettings> }) {
   const cards = [
-    { href: "/users", title: settings.t.nav.users, text: "Роли, пароли, статус аккаунтов.", icon: Users },
-    { href: "/feed", title: settings.t.nav.feed, text: "Объявления, обновления и адресные уведомления.", icon: Bell },
-    { href: "/tickets", title: settings.t.nav.tickets, text: "Поддержка пользователей и закрытие обращений.", icon: Ticket },
-    { href: "/assistant", title: settings.t.nav.assistant, text: "AI-инструменты администратора.", icon: Bot },
+    { href: "/users", title: settings.t.nav.users, text: "Единая витрина аккаунтов, ролей, активности и доступа.", metric: "Identity", icon: Users, tone: "royal", span: "wide" },
+    { href: "/feed", title: settings.t.nav.feed, text: "Адресные сообщения, продуктовые обновления и системные уведомления.", metric: "Signal", icon: Bell, tone: "emerald", span: "" },
+    { href: "/tickets", title: settings.t.nav.tickets, text: "Контекст обращений, ответы поддержки и контроль SLA.", metric: "Care", icon: Ticket, tone: "amber", span: "tall" },
+    { href: "/assistant", title: settings.t.nav.assistant, text: "Операционные действия через AI без ручной навигации по сервисам.", metric: "AI Ops", icon: Bot, tone: "violet", span: "" },
   ]
-  return <section className="grid cards">{cards.map((card) => <Link href={card.href} className="card action-card" key={card.href}><card.icon size={24}/><h2>{card.title}</h2><p>{card.text}</p><span>Открыть <ChevronRight size={16}/></span></Link>)}</section>
+  const services = ["Auth", "Planner", "Documents", "Admin"]
+  return (
+    <section className="overview-lux">
+      <div className="lux-hero lux-enter">
+        <div className="hero-copy">
+          <p className="overline">Операционный центр</p>
+          <h2>Управление экосистемой, которое выглядит как закрытый финансовый кабинет.</h2>
+          <p>Админка собрана как отдельный премиальный продукт: общие пользователи, поддержка, лента, роли и сервисные действия без ощущения технической панели.</p>
+          <div className="hero-actions">
+            <Link className="primary magnetic" href="/users">Управлять доступом</Link>
+            <Link className="secondary magnetic" href="/tickets">Открыть поддержку</Link>
+          </div>
+        </div>
+        <div className="hero-orb lux-media" aria-hidden="true">
+          <div className="orb-core">NA</div>
+          <div className="orb-ring ring-one" />
+          <div className="orb-ring ring-two" />
+          <div className="mini-led">secure</div>
+        </div>
+      </div>
+
+      <div className="bento-grid">
+        {cards.map((card) => (
+          <Link href={card.href} className={`bento-card stack-card ${card.tone} ${card.span}`} key={card.href}>
+            <span className="bento-icon"><card.icon size={22}/></span>
+            <span className="bento-metric">{card.metric}</span>
+            <h3>{card.title}</h3>
+            <p>{card.text}</p>
+            <span className="bento-link">Открыть <ChevronRight size={16}/></span>
+          </Link>
+        ))}
+      </div>
+
+      <div className="service-rail lux-enter">
+        {services.map((service, index) => (
+          <div className="service-strip lux-media" key={service}>
+            <span>0{index + 1}</span>
+            <b>{service}</b>
+            <em>{index === 0 ? "identity layer" : index === 1 ? "calendar intelligence" : index === 2 ? "knowledge vault" : "control surface"}</em>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
 }
 
 function UsersPanel({ settings }: { settings: ReturnType<typeof useSettings> }) {
