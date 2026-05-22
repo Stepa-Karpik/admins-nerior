@@ -1,4 +1,4 @@
-export type Role = "user" | "admin"
+export type Role = "user" | "support" | "admin"
 export type FeedType = "notification" | "update" | "reminder" | "ticket"
 export type TicketStatus = "open" | "closed"
 
