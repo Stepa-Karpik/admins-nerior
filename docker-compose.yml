@@ -1,0 +1,18 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-/api/v1}
+        NEXT_PUBLIC_AUTH_URL: ${NEXT_PUBLIC_AUTH_URL:-https://auth.nerior.ru/login}
+        NEXT_PUBLIC_PLANNER_URL: ${NEXT_PUBLIC_PLANNER_URL:-https://planner.nerior.ru}
+        NEXT_PUBLIC_DOCUMENTS_URL: ${NEXT_PUBLIC_DOCUMENTS_URL:-https://documents.nerior.ru}
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-/api/v1}
+      NEXT_PUBLIC_AUTH_URL: ${NEXT_PUBLIC_AUTH_URL:-https://auth.nerior.ru/login}
+      NEXT_PUBLIC_PLANNER_URL: ${NEXT_PUBLIC_PLANNER_URL:-https://planner.nerior.ru}
+      NEXT_PUBLIC_DOCUMENTS_URL: ${NEXT_PUBLIC_DOCUMENTS_URL:-https://documents.nerior.ru}
+    ports:
+      - "127.0.0.1:3300:3000"
+    restart: unless-stopped

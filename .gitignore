@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# next
+.next/
+out/
+
+# env
+.env
+.env.*
+!.env.example
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# system
+.DS_Store
+Thumbs.db
+
+# local/docs working notes
+/docs
+
+# TypeScript
+*.tsbuildinfo
