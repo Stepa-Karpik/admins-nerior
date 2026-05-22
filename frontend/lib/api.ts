@@ -148,6 +148,32 @@ export async function request<T>(path: string, init: RequestInit = {}, retry = t
   }
 }
 
+export async function downloadBlob(path: string): Promise<{ blob: Blob; filename: string } | null> {
+  const headers: Record<string, string> = {}
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`
+  let res = await fetch(apiUrl(path), { headers })
+  if (res.status === 401 && (await refreshAccessToken())) {
+    headers.Authorization = `Bearer ${accessToken}`
+    res = await fetch(apiUrl(path), { headers })
+  }
+  if (!res.ok) return null
+  const disposition = res.headers.get("content-disposition") || ""
+  const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i)
+  const filename = decodeURIComponent(match?.[1] || match?.[2] || "attachment")
+  return { blob: await res.blob(), filename }
+}
+
+export function saveBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
 export async function ensureAdminProfile() {
   if (!getRefreshToken()) await exchangeSharedSession()
   const profile = await request<Profile>("/profile")
