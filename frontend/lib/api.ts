@@ -1,6 +1,6 @@
 export type Role = "user" | "support" | "admin"
 export type FeedType = "notification" | "update" | "reminder" | "ticket"
-export type TicketStatus = "open" | "closed"
+export type TicketStatus = "open" | "answered" | "closed"
 
 export type ApiEnvelope<T> = {
   data: T | null
@@ -41,16 +41,21 @@ export type FeedItem = {
   type: FeedType
   title: string
   body: string
+  service?: string
+  meta?: Record<string, unknown> | null
   target_username?: string | null
   published_at?: string | null
   created_at: string
   updated_at: string
 }
 
+export type SupportAttachment = { original_name: string; stored_name: string; content_type: string; size_bytes: number }
+
 export type SupportMessage = {
   id: string
   author_role: "user" | "admin" | "system"
   body: string
+  attachments?: SupportAttachment[]
   created_at: string
 }
 
@@ -59,6 +64,8 @@ export type SupportTicket = {
   public_number: number
   user_id: string
   user_username?: string | null
+  user_display_name?: string | null
+  service?: string
   topic: string
   subtopic: string
   subject: string
